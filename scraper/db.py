@@ -5,7 +5,14 @@ from psycopg.rows import dict_row
 
 
 def get_connection():
-    database_url = os.environ["DATABASE_URL"]
+    database_url = os.environ.get("DATABASE_URL", "")
+    if not database_url:
+        raise RuntimeError(
+            "DATABASE_URL is not set (or is empty). In GitHub Actions this means the "
+            "'DATABASE_URL' repository secret doesn't exist yet -- check Settings > "
+            "Secrets and variables > Actions > Repository secrets. Locally, set it in "
+            "your shell before running `python -m scraper.run`."
+        )
     return psycopg.connect(database_url, row_factory=dict_row)
 
 
