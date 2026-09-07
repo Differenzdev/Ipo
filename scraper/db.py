@@ -5,7 +5,7 @@ from psycopg.rows import dict_row
 
 
 def get_connection():
-    database_url = os.environ.get("DATABASE_URL", "")
+    database_url = os.environ.get("DATABASE_URL", "").strip()
     if not database_url:
         raise RuntimeError(
             "DATABASE_URL is not set (or is empty). In GitHub Actions this means the "
