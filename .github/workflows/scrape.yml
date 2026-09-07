@@ -20,6 +20,8 @@ jobs:
 
       - run: pip install -r scraper/requirements.txt
 
+      - run: playwright install --with-deps chromium
+
       - run: python -m scraper.run
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

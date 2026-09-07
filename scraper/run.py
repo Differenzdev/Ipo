@@ -7,18 +7,37 @@ work, and with DATABASE_URL set in the environment)
 import sys
 import time
 
-from .db import get_connection, get_tracked_ipos, insert_gmp_snapshot, update_ipo_details
-from .sources import chittorgarh, investorgain
+from .db import (
+    create_discovered_ipo,
+    get_connection,
+    get_tracked_chittorgarh_urls,
+    get_tracked_ipos,
+    insert_gmp_snapshot,
+    update_ipo_details,
+)
+from .sources import chittorgarh, discovery, investorgain
 
 REQUEST_DELAY_SECONDS = 3  # good-citizen pacing between requests, not just to dodge blocks
 
 
 def run() -> int:
     conn = get_connection()
-    ipos = get_tracked_ipos(conn)
-    print(f"Found {len(ipos)} tracked IPO(s).")
 
     failures = 0
+    try:
+        already_tracked = get_tracked_chittorgarh_urls(conn)
+        found = discovery.discover()
+        new_ipos = [ipo for ipo in found if ipo["chittorgarh_url"] not in already_tracked]
+        for ipo in new_ipos:
+            create_discovered_ipo(conn, ipo["name"], ipo["chittorgarh_url"])
+            print(f"[discovery] Added new IPO: {ipo['name']}")
+        print(f"[discovery] Found {len(found)} current/upcoming IPO(s) listed, {len(new_ipos)} new.")
+    except Exception as exc:  # noqa: BLE001 -- discovery failing must not block refreshing existing IPOs
+        failures += 1
+        print(f"[discovery] FAILED ({exc})", file=sys.stderr)
+
+    ipos = get_tracked_ipos(conn)
+    print(f"Found {len(ipos)} tracked IPO(s).")
     for ipo in ipos:
         label = f"{ipo['company_name']} (ipo id {ipo['id']})"
 

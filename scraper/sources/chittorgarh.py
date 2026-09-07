@@ -90,6 +90,19 @@ def _ddmmmyyyy_to_iso(day: str, mon: str, year: str) -> str:
     return datetime.strptime(f"{int(day):02d} {mon[:3]} {year}", "%d %b %Y").date().isoformat()
 
 
+def _compute_status(open_date: str | None, close_date: str | None, listing_date: str | None) -> str:
+    """Derived from the scraper's UTC date vs IST market dates -- up to a day
+    of fuzziness at the boundary, acceptable for a personal tool."""
+    today = date.today()
+    if listing_date and today >= date.fromisoformat(listing_date):
+        return "listed"
+    if close_date and today > date.fromisoformat(close_date):
+        return "closed"
+    if open_date and today >= date.fromisoformat(open_date):
+        return "open"
+    return "upcoming"
+
+
 def scrape(url: str) -> dict:
     """Returns a dict of ipo fields (any of which may be None if not found)."""
     html = fetch(url)
@@ -121,4 +134,5 @@ def scrape(url: str) -> dict:
         "open_date": open_date,
         "close_date": close_date,
         "listing_date": listing_date,
+        "status": _compute_status(open_date, close_date, listing_date),
     }

@@ -1,7 +1,13 @@
 import os
+import re
 
 import psycopg
 from psycopg.rows import dict_row
+
+
+def slugify(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower().strip())
+    return slug.strip("-")
 
 
 def get_connection():
@@ -39,6 +45,7 @@ _UPDATABLE_IPO_FIELDS = {
     "open_date",
     "close_date",
     "listing_date",
+    "status",
 }
 
 
@@ -58,6 +65,37 @@ def update_ipo_details(conn, ipo_id, details):
         cur.execute(
             f"update ipos set {set_clause}, updated_at = now() where id = %s",
             [*values, ipo_id],
+        )
+    conn.commit()
+
+
+def get_tracked_chittorgarh_urls(conn) -> set[str]:
+    with conn.cursor() as cur:
+        cur.execute("select chittorgarh_url from ipos where chittorgarh_url is not null")
+        return {row["chittorgarh_url"] for row in cur.fetchall()}
+
+
+def create_discovered_ipo(conn, name: str, chittorgarh_url: str) -> None:
+    """Creates a bare, minimal ipo row for a newly discovered IPO. Deliberately
+    leaves most fields null -- the chittorgarh refresh step that runs right
+    after discovery (in the same scraper run) fills them in."""
+    slug = slugify(name)
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            insert into companies (slug, name) values (%s, %s)
+            on conflict (slug) do update set name = excluded.name
+            returning id
+            """,
+            [slug, name],
+        )
+        company_id = cur.fetchone()["id"]
+        cur.execute(
+            """
+            insert into ipos (company_id, status, chittorgarh_url)
+            values (%s, 'upcoming', %s)
+            """,
+            [company_id, chittorgarh_url],
         )
     conn.commit()
 
