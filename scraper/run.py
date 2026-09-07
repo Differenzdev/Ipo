@@ -1,0 +1,60 @@
+"""Entry point: refreshes data for every IPO that has a source URL set via /admin.
+
+Usage: python -m scraper.run   (must run from the repo root so relative imports
+work, and with DATABASE_URL set in the environment)
+"""
+
+import sys
+import time
+
+from .db import get_connection, get_tracked_ipos, insert_gmp_snapshot, update_ipo_details
+from .sources import chittorgarh, investorgain
+
+REQUEST_DELAY_SECONDS = 3  # good-citizen pacing between requests, not just to dodge blocks
+
+
+def run() -> int:
+    conn = get_connection()
+    ipos = get_tracked_ipos(conn)
+    print(f"Found {len(ipos)} tracked IPO(s).")
+
+    failures = 0
+    for ipo in ipos:
+        label = f"{ipo['company_name']} (ipo id {ipo['id']})"
+
+        if ipo["chittorgarh_url"]:
+            try:
+                details = chittorgarh.scrape(ipo["chittorgarh_url"])
+                update_ipo_details(conn, ipo["id"], details)
+                print(f"[chittorgarh] {label}: updated {[k for k, v in details.items() if v is not None]}")
+            except Exception as exc:  # noqa: BLE001 -- one IPO's failure must not stop the rest
+                failures += 1
+                print(f"[chittorgarh] {label}: FAILED ({exc})", file=sys.stderr)
+            time.sleep(REQUEST_DELAY_SECONDS)
+
+        if ipo["investorgain_url"]:
+            try:
+                gmp = investorgain.scrape(ipo["investorgain_url"])
+                if gmp["gmp_value"] is not None:
+                    price_band_high = float(ipo["price_band_high"]) if ipo["price_band_high"] else None
+                    gmp_pct = (
+                        round(gmp["gmp_value"] / price_band_high * 100, 2)
+                        if price_band_high
+                        else None
+                    )
+                    insert_gmp_snapshot(conn, ipo["id"], gmp["gmp_value"], gmp_pct, "investorgain scraper")
+                    print(f"[investorgain] {label}: GMP {gmp['gmp_value']} ({gmp['gmp_date']})")
+                else:
+                    print(f"[investorgain] {label}: no GMP data found")
+            except Exception as exc:  # noqa: BLE001
+                failures += 1
+                print(f"[investorgain] {label}: FAILED ({exc})", file=sys.stderr)
+            time.sleep(REQUEST_DELAY_SECONDS)
+
+    conn.close()
+    print(f"Done. {failures} failure(s).")
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(run())

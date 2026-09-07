@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+.env*
+
+# python (scraper)
+.venv
+__pycache__/
+*.pyc
+
+# local tool state, not part of the project
+/.claude
+/.sf
