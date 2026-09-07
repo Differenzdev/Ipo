@@ -55,4 +55,5 @@ export type IpoListItem = Ipo & {
   sector: string | null;
   latest_gmp_pct: string | null;
   latest_overall_subscription: string | null;
+  gmp_sparkline: number[] | null;
 };

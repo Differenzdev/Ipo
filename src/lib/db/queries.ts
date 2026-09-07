@@ -32,7 +32,14 @@ export async function listIpos(filters?: { sector?: string; q?: string }): Promi
         select times_subscribed::text from subscriptions
         where subscriptions.ipo_id = ipos.id and subscriptions.category = 'overall'
         order by as_of desc limit 1
-      ) as latest_overall_subscription
+      ) as latest_overall_subscription,
+      (
+        select array_agg(gmp_pct order by as_of asc) from (
+          select gmp_pct, as_of from gmp_snapshots
+          where gmp_snapshots.ipo_id = ipos.id and gmp_pct is not null
+          order by as_of desc limit 8
+        ) recent
+      ) as gmp_sparkline
     from ipos
     join companies on companies.id = ipos.company_id
     ${where}
