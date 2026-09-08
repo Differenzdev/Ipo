@@ -46,10 +46,11 @@ The public dashboard lives at `/ipos`.
 On an IPO's admin page (`/admin/<slug>`), set **Chittorgarh IPO page URL** and/or **InvestorGain IPO
 page URL** in the "Auto-refresh source URLs" section, and a scheduled scraper
 (`scraper/`, run via GitHub Actions every 3 hours, see `.github/workflows/scrape.yml`) will keep
-price band, lot size, issue size, dates, and GMP history up to date for that IPO. Leave both blank
-to exclude an IPO from auto-refresh. Subscription status and fundamentals stay manual -- see
-`scraper/README.md` for why (both candidate sites load live subscription numbers via client-side JS,
-not scrapeable without a headless browser).
+price band, lot size, issue size, dates, GMP history, and category-wise subscription status up to
+date for that IPO -- new IPOs are also auto-discovered, tagged mainboard/SME, filterable on `/ipos`.
+Leave both source URLs blank to exclude an IPO from auto-refresh. Fundamentals stay manual (see
+`scraper/README.md`). The scraper can also send a digest email on notable events (new IPO, opens
+today, GMP change/threshold, heavy oversubscription) -- optional, see `scraper/README.md`.
 
 To run the scraper yourself (e.g. to test after changing it):
 ```bash

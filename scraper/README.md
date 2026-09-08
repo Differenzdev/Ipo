@@ -31,6 +31,26 @@ API layer.
   its category breakdown behind a "Preview Limited" premium upsell and only the combined Total is
   free there, which is why this uses the aggregate report pages instead.
 
+## Email alerts (optional)
+
+`notify.py` sends one digest email per run (via [Resend](https://resend.com)'s REST API -- no SDK,
+just `requests`) when anything notable happened: a new IPO discovered, an IPO opening today, its
+GMP % changing at all, its GMP % crossing 50%, or its retail subscription crossing 10x. One email
+per run, not one per event.
+
+Optional and off by default -- without the two env vars below, `notify.py` logs a skip message and
+the rest of the run is unaffected:
+
+- `RESEND_API_KEY` -- from resend.com (free tier: 3,000 emails/month, no domain needed since sending
+  defaults to `onboarding@resend.dev`, which can only send **to the email address you signed up
+  with** -- fine here since that's also the alert recipient).
+- `ALERT_EMAIL_TO` -- where alerts go (your Resend account's own verified email, per the above).
+- `ALERT_EMAIL_FROM` -- optional override of the `from` address, if you've verified your own domain
+  on Resend instead of using the sandbox one.
+
+Set both as GitHub Actions repository secrets (Settings > Secrets and variables > Actions) to
+enable this in the scheduled runs; set them in your shell for local runs.
+
 ## Running it
 
 ```bash

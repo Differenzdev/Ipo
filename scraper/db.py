@@ -27,7 +27,7 @@ def get_tracked_ipos(conn):
     with conn.cursor() as cur:
         cur.execute(
             """
-            select ipos.id, ipos.chittorgarh_url, ipos.investorgain_url,
+            select ipos.id, ipos.status, ipos.chittorgarh_url, ipos.investorgain_url,
                    ipos.price_band_high, companies.name as company_name
             from ipos
             join companies on companies.id = ipos.company_id
@@ -104,6 +104,30 @@ def create_discovered_ipo(conn, name: str, chittorgarh_url: str, board: str) -> 
             [company_id, chittorgarh_url, board],
         )
     conn.commit()
+
+
+def get_latest_gmp_pct(conn, ipo_id):
+    """The most recent gmp_pct already in the DB, i.e. from *before* this
+    run's scrape -- used to detect a change/threshold-crossing worth alerting on."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "select gmp_pct from gmp_snapshots where ipo_id = %s and gmp_pct is not null order by as_of desc limit 1",
+            [ipo_id],
+        )
+        row = cur.fetchone()
+        return float(row["gmp_pct"]) if row else None
+
+
+def get_latest_subscription(conn, ipo_id, category):
+    """The most recent times_subscribed for a category already in the DB,
+    i.e. from *before* this run's scrape."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "select times_subscribed from subscriptions where ipo_id = %s and category = %s order by as_of desc limit 1",
+            [ipo_id, category],
+        )
+        row = cur.fetchone()
+        return float(row["times_subscribed"]) if row else None
 
 
 def insert_subscription_snapshot(conn, ipo_id, category, times_subscribed, source):
