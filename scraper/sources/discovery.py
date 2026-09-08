@@ -18,8 +18,8 @@ from playwright.sync_api import sync_playwright
 from ..http import USER_AGENT
 
 LIST_URLS = [
-    "https://www.chittorgarh.com/report/ipo-in-india-list-main-board-sme/82/mainboard/",
-    "https://www.chittorgarh.com/report/ipo-in-india-list-main-board-sme/82/sme/",
+    ("mainboard", "https://www.chittorgarh.com/report/ipo-in-india-list-main-board-sme/82/mainboard/"),
+    ("sme", "https://www.chittorgarh.com/report/ipo-in-india-list-main-board-sme/82/sme/"),
 ]
 
 # Company names in this table carry a badge remnant with no separating
@@ -31,7 +31,7 @@ def _clean_name(raw: str) -> str:
     return _NAME_JUNK.sub("", raw).strip()
 
 
-def _discover_from_list(page, url: str) -> list[dict]:
+def _discover_from_list(page, board: str, url: str) -> list[dict]:
     page.goto(url, wait_until="networkidle", timeout=30000)
     page.wait_for_timeout(1500)
     rows = page.eval_on_selector_all(
@@ -46,19 +46,20 @@ def _discover_from_list(page, url: str) -> list[dict]:
     for r in rows:
         if r["listingDate"] or not r["href"] or not r["name"]:
             continue
-        discovered.append({"name": _clean_name(r["name"]), "chittorgarh_url": r["href"]})
+        discovered.append({"name": _clean_name(r["name"]), "chittorgarh_url": r["href"], "board": board})
     return discovered
 
 
 def discover() -> list[dict]:
-    """Returns a list of {"name", "chittorgarh_url"} for currently upcoming/open
-    IPOs found across the mainboard and SME list pages, deduped by URL."""
+    """Returns a list of {"name", "chittorgarh_url", "board"} for currently
+    upcoming/open IPOs found across the mainboard and SME list pages, deduped
+    by URL (board comes from which of the two list pages a row was found on)."""
     results: dict[str, dict] = {}
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page(user_agent=USER_AGENT)
-        for url in LIST_URLS:
-            for item in _discover_from_list(page, url):
+        for board, url in LIST_URLS:
+            for item in _discover_from_list(page, board, url):
                 results[item["chittorgarh_url"]] = item
         browser.close()
     return list(results.values())

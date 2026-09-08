@@ -31,8 +31,8 @@ def run() -> int:
         found = discovery.discover()
         new_ipos = [ipo for ipo in found if ipo["chittorgarh_url"] not in already_tracked]
         for ipo in new_ipos:
-            create_discovered_ipo(conn, ipo["name"], ipo["chittorgarh_url"])
-            print(f"[discovery] Added new IPO: {ipo['name']}")
+            create_discovered_ipo(conn, ipo["name"], ipo["chittorgarh_url"], ipo["board"])
+            print(f"[discovery] Added new IPO: {ipo['name']} ({ipo['board']})")
         print(f"[discovery] Found {len(found)} current/upcoming IPO(s) listed, {len(new_ipos)} new.")
     except Exception as exc:  # noqa: BLE001 -- discovery failing must not block refreshing existing IPOs
         failures += 1

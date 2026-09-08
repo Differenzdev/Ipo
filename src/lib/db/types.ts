@@ -16,6 +16,7 @@ export type Ipo = {
   close_date: string | null;
   listing_date: string | null;
   status: "upcoming" | "open" | "closed" | "listed";
+  board: "mainboard" | "sme" | null;
   chittorgarh_url: string | null;
   investorgain_url: string | null;
 };

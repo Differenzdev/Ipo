@@ -20,6 +20,8 @@ create table if not exists ipos (
   close_date date,
   listing_date date,
   status text not null default 'upcoming' check (status in ('upcoming', 'open', 'closed', 'listed')),
+  -- Null until set (manually, or by the discovery scraper -- see scraper/sources/discovery.py).
+  board text check (board in ('mainboard', 'sme')),
   -- Source URLs for the Phase 2 scraper (scraper/) to refresh this IPO's data from.
   -- Set once per IPO through /admin. Left null, the scraper skips this IPO.
   chittorgarh_url text,

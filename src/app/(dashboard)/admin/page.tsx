@@ -26,6 +26,18 @@ export default async function AdminPage() {
           defaultValue="upcoming"
           options={["upcoming", "open", "closed", "listed"]}
         />
+        <label className="text-sm text-ink-secondary">
+          Board
+          <select
+            name="board"
+            defaultValue=""
+            className="mt-1 w-full rounded-md border border-hairline bg-plane px-3 py-2 text-sm focus:border-accent focus:outline-none"
+          >
+            <option value="">Unknown</option>
+            <option value="mainboard">Mainboard</option>
+            <option value="sme">SME</option>
+          </select>
+        </label>
         <Field label="Price band low (Rs.)" name="priceBandLow" type="number" step="0.01" />
         <Field label="Price band high (Rs.)" name="priceBandHigh" type="number" step="0.01" />
         <Field label="Lot size (shares)" name="lotSize" type="number" />

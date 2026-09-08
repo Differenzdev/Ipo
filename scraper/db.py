@@ -81,7 +81,7 @@ def get_ipo_ids_by_chittorgarh_url(conn) -> dict[str, int]:
         return {row["chittorgarh_url"]: row["id"] for row in cur.fetchall()}
 
 
-def create_discovered_ipo(conn, name: str, chittorgarh_url: str) -> None:
+def create_discovered_ipo(conn, name: str, chittorgarh_url: str, board: str) -> None:
     """Creates a bare, minimal ipo row for a newly discovered IPO. Deliberately
     leaves most fields null -- the chittorgarh refresh step that runs right
     after discovery (in the same scraper run) fills them in."""
@@ -98,10 +98,10 @@ def create_discovered_ipo(conn, name: str, chittorgarh_url: str) -> None:
         company_id = cur.fetchone()["id"]
         cur.execute(
             """
-            insert into ipos (company_id, status, chittorgarh_url)
-            values (%s, 'upcoming', %s)
+            insert into ipos (company_id, status, chittorgarh_url, board)
+            values (%s, 'upcoming', %s, %s)
             """,
-            [company_id, chittorgarh_url],
+            [company_id, chittorgarh_url, board],
         )
     conn.commit()
 

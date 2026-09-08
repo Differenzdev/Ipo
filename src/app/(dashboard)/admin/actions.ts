@@ -34,6 +34,7 @@ const ipoSchema = z.object({
   closeDate: z.string().nullable(),
   listingDate: z.string().nullable(),
   status: z.enum(["upcoming", "open", "closed", "listed"]),
+  board: z.enum(["mainboard", "sme"]).nullable(),
 });
 
 export async function saveIpo(formData: FormData): Promise<void> {
@@ -48,6 +49,7 @@ export async function saveIpo(formData: FormData): Promise<void> {
     closeDate: strOrNull(formData.get("closeDate")),
     listingDate: strOrNull(formData.get("listingDate")),
     status: String(formData.get("status") ?? "upcoming") as "upcoming" | "open" | "closed" | "listed",
+    board: strOrNull(formData.get("board")) as "mainboard" | "sme" | null,
   });
 
   const company = await upsertCompany({ name: parsed.name, sector: parsed.sector });
@@ -61,6 +63,7 @@ export async function saveIpo(formData: FormData): Promise<void> {
     closeDate: parsed.closeDate,
     listingDate: parsed.listingDate,
     status: parsed.status,
+    board: parsed.board,
   });
 
   revalidatePath("/ipos");

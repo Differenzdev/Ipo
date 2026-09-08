@@ -18,11 +18,11 @@ const STATUS_TONE: Record<string, BadgeTone> = {
 export default async function IposPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sector?: string; q?: string }>;
+  searchParams: Promise<{ sector?: string; q?: string; board?: string }>;
 }) {
-  const { sector, q } = await searchParams;
-  const [ipos, sectors] = await Promise.all([listIpos({ sector, q }), getDistinctSectors()]);
-  const hasFilters = Boolean(sector || q);
+  const { sector, q, board } = await searchParams;
+  const [ipos, sectors] = await Promise.all([listIpos({ sector, q, board }), getDistinctSectors()]);
+  const hasFilters = Boolean(sector || q || board);
 
   const openCount = ipos.filter((i) => i.status === "open").length;
   const gmpValues = ipos.map((i) => (i.latest_gmp_pct ? Number(i.latest_gmp_pct) : null)).filter((v): v is number => v !== null);
@@ -73,6 +73,15 @@ export default async function IposPage({
             </option>
           ))}
         </select>
+        <select
+          name="board"
+          defaultValue={board ?? ""}
+          className="rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+        >
+          <option value="">Mainboard + SME</option>
+          <option value="mainboard">Mainboard</option>
+          <option value="sme">SME</option>
+        </select>
         <button
           type="submit"
           className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-plane hover:opacity-90"
@@ -104,7 +113,10 @@ export default async function IposPage({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium text-ink">{ipo.company_name}</p>
-                    <p className="text-xs text-ink-muted">{ipo.sector ?? "Sector n/a"}</p>
+                    <p className="text-xs text-ink-muted">
+                      {ipo.sector ?? "Sector n/a"}
+                      {ipo.board && <span className="uppercase"> &middot; {ipo.board}</span>}
+                    </p>
                   </div>
                   <Badge tone={STATUS_TONE[ipo.status]}>{ipo.status}</Badge>
                 </div>

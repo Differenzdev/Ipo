@@ -1,7 +1,7 @@
 import { query } from "@/lib/db";
 import type { Company, Fundamentals, GmpSnapshot, Ipo, IpoListItem, Subscription } from "@/lib/db/types";
 
-export async function listIpos(filters?: { sector?: string; q?: string }): Promise<IpoListItem[]> {
+export async function listIpos(filters?: { sector?: string; q?: string; board?: string }): Promise<IpoListItem[]> {
   const conditions: string[] = [];
   const params: unknown[] = [];
 
@@ -12,6 +12,10 @@ export async function listIpos(filters?: { sector?: string; q?: string }): Promi
   if (filters?.q) {
     params.push(`%${filters.q}%`);
     conditions.push(`companies.name ilike $${params.length}`);
+  }
+  if (filters?.board) {
+    params.push(filters.board);
+    conditions.push(`ipos.board = $${params.length}`);
   }
 
   const where = conditions.length ? `where ${conditions.join(" and ")}` : "";
@@ -151,6 +155,7 @@ export async function upsertIpo(input: {
   closeDate: string | null;
   listingDate: string | null;
   status: Ipo["status"];
+  board?: Ipo["board"];
   chittorgarhUrl?: string | null;
   investorgainUrl?: string | null;
 }): Promise<Ipo> {
@@ -158,8 +163,8 @@ export async function upsertIpo(input: {
   if (existing) {
     const rows = await query<Ipo>(
       `update ipos set price_band_low = $2, price_band_high = $3, lot_size = $4, issue_size_crores = $5,
-         open_date = $6, close_date = $7, listing_date = $8, status = $9,
-         chittorgarh_url = $10, investorgain_url = $11, updated_at = now()
+         open_date = $6, close_date = $7, listing_date = $8, status = $9, board = $10,
+         chittorgarh_url = $11, investorgain_url = $12, updated_at = now()
        where id = $1 returning *`,
       [
         existing.id,
@@ -171,6 +176,7 @@ export async function upsertIpo(input: {
         input.closeDate,
         input.listingDate,
         input.status,
+        input.board ?? existing.board,
         input.chittorgarhUrl ?? existing.chittorgarh_url,
         input.investorgainUrl ?? existing.investorgain_url,
       ]
@@ -178,8 +184,8 @@ export async function upsertIpo(input: {
     return rows[0];
   }
   const rows = await query<Ipo>(
-    `insert into ipos (company_id, price_band_low, price_band_high, lot_size, issue_size_crores, open_date, close_date, listing_date, status, chittorgarh_url, investorgain_url)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *`,
+    `insert into ipos (company_id, price_band_low, price_band_high, lot_size, issue_size_crores, open_date, close_date, listing_date, status, board, chittorgarh_url, investorgain_url)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning *`,
     [
       input.companyId,
       input.priceBandLow,
@@ -190,6 +196,7 @@ export async function upsertIpo(input: {
       input.closeDate,
       input.listingDate,
       input.status,
+      input.board ?? null,
       input.chittorgarhUrl ?? null,
       input.investorgainUrl ?? null,
     ]
