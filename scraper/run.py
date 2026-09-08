@@ -10,12 +10,14 @@ import time
 from .db import (
     create_discovered_ipo,
     get_connection,
+    get_ipo_ids_by_chittorgarh_url,
     get_tracked_chittorgarh_urls,
     get_tracked_ipos,
     insert_gmp_snapshot,
+    insert_subscription_snapshot,
     update_ipo_details,
 )
-from .sources import chittorgarh, discovery, investorgain
+from .sources import chittorgarh, discovery, investorgain, subscription
 
 REQUEST_DELAY_SECONDS = 3  # good-citizen pacing between requests, not just to dodge blocks
 
@@ -35,6 +37,22 @@ def run() -> int:
     except Exception as exc:  # noqa: BLE001 -- discovery failing must not block refreshing existing IPOs
         failures += 1
         print(f"[discovery] FAILED ({exc})", file=sys.stderr)
+
+    try:
+        by_url = get_ipo_ids_by_chittorgarh_url(conn)
+        subs = subscription.scrape_all()
+        updated = 0
+        for url, values in subs.items():
+            ipo_id = by_url.get(url)
+            if ipo_id is None:
+                continue  # not one of ours (or its chittorgarh_url isn't set yet)
+            for category, times in values.items():
+                insert_subscription_snapshot(conn, ipo_id, category, times, "chittorgarh scraper")
+            updated += 1
+        print(f"[subscription] Updated {updated} tracked IPO(s) with fresh subscription figures.")
+    except Exception as exc:  # noqa: BLE001 -- must not block refreshing existing IPOs
+        failures += 1
+        print(f"[subscription] FAILED ({exc})", file=sys.stderr)
 
     ipos = get_tracked_ipos(conn)
     print(f"Found {len(ipos)} tracked IPO(s).")

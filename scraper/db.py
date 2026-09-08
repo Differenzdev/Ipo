@@ -75,6 +75,12 @@ def get_tracked_chittorgarh_urls(conn) -> set[str]:
         return {row["chittorgarh_url"] for row in cur.fetchall()}
 
 
+def get_ipo_ids_by_chittorgarh_url(conn) -> dict[str, int]:
+    with conn.cursor() as cur:
+        cur.execute("select id, chittorgarh_url from ipos where chittorgarh_url is not null")
+        return {row["chittorgarh_url"]: row["id"] for row in cur.fetchall()}
+
+
 def create_discovered_ipo(conn, name: str, chittorgarh_url: str) -> None:
     """Creates a bare, minimal ipo row for a newly discovered IPO. Deliberately
     leaves most fields null -- the chittorgarh refresh step that runs right
@@ -96,6 +102,18 @@ def create_discovered_ipo(conn, name: str, chittorgarh_url: str) -> None:
             values (%s, 'upcoming', %s)
             """,
             [company_id, chittorgarh_url],
+        )
+    conn.commit()
+
+
+def insert_subscription_snapshot(conn, ipo_id, category, times_subscribed, source):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            insert into subscriptions (ipo_id, category, times_subscribed, source)
+            values (%s, %s, %s, %s)
+            """,
+            [ipo_id, category, times_subscribed, source],
         )
     conn.commit()
 

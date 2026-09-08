@@ -22,10 +22,14 @@ API layer.
   **Not auto-set for discovered IPOs** -- the list table has no InvestorGain link and there's no
   reliable way to derive one, so GMP tracking for a newly discovered IPO needs its InvestorGain URL
   added manually via `/admin/<slug>`, same as before.
-- **Not scraped: subscription status.** Both sites' live subscription figures load via
-  client-side JS after the page hydrates -- confirmed by fetching the pages and chittorgarh's
-  dedicated subscription-status report page directly and finding no data in the initial HTML. Keep
-  entering subscription status manually via `/admin`.
+- **Subscription status** (`sources/subscription.py`, Playwright): category-wise times-subscribed
+  (QIB/NII/Retail/Employee/Total) from chittorgarh's two live subscription-status *report* pages
+  (mainboard + SME) -- these list every currently-open/recently-closed IPO in one table, client-
+  rendered like the discovery list pages. Matched to a tracked IPO by its `/ipo/<slug>-ipo/<id>/`
+  link, same as `ipos.chittorgarh_url` -- exact match, no name-based dedup needed. **Not the same as
+  the per-IPO "subscription status live" page** (`/ipo_subscription/<slug>/<id>/`) -- that one gates
+  its category breakdown behind a "Preview Limited" premium upsell and only the combined Total is
+  free there, which is why this uses the aggregate report pages instead.
 
 ## Running it
 
