@@ -32,7 +32,9 @@ def _clean_name(raw: str) -> str:
 
 
 def _discover_from_list(page, board: str, url: str) -> list[dict]:
-    page.goto(url, wait_until="networkidle", timeout=30000)
+    # "networkidle" never settles on this ad-heavy site; wait for the table itself.
+    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    page.wait_for_selector("#report_table tbody tr", timeout=60000)
     page.wait_for_timeout(1500)
     rows = page.eval_on_selector_all(
         "#report_table tbody tr",

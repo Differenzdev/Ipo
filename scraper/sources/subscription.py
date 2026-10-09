@@ -39,14 +39,18 @@ _COLUMN_CATEGORY = {
 def _parse_row(cells: list[str]) -> dict[str, float]:
     values: dict[str, float] = {}
     for idx, category in _COLUMN_CATEGORY.items():
-        raw = cells[idx].strip() if idx < len(cells) else ""
-        if raw:
+        raw = cells[idx].strip().replace(",", "") if idx < len(cells) else ""
+        try:
             values[category] = float(raw)
+        except ValueError:
+            continue  # blank or a placeholder like "-": no figure for this category
     return values
 
 
 def _scrape_report(page, url: str) -> dict[str, dict[str, float]]:
-    page.goto(url, wait_until="networkidle", timeout=30000)
+    # "networkidle" never settles on this ad-heavy site; wait for the table itself.
+    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    page.wait_for_selector("#report_table tbody tr", timeout=60000)
     page.wait_for_timeout(1500)
     rows = page.eval_on_selector_all(
         "#report_table tbody tr",
